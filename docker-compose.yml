@@ -3,9 +3,7 @@ services:
   cameraapp:
     build: ./dir
     volumes:
-      - /dev/ttyAMA0 /dev/ttyAMA0
-      - /dev/ttyAMA1 /dev/ttyAMA1
-      -
+      - /dev/ /dev/
   nifi:
     image: apache/nifi:latest
     ports:

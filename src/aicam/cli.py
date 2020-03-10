@@ -1,7 +1,7 @@
 import click
-from src.aicam.settings import CAMERA_NUMBER, INVERT_CAMERA, GPS_BAUD_RATE, GPS_SERIAL_PORT,MODEL_PATH, BASE_URL
-from src.aicam.gps import GPS
-from src.aicam.camera import Camera
+from .settings import CAMERA_NUMBER, INVERT_CAMERA, GPS_BAUD_RATE, GPS_SERIAL_PORT,MODEL_PATH, BASE_URL
+from .gps import GPS
+from .camera import Camera
 from attentive import quitevent
 from logging import getLogger
 from time import sleep

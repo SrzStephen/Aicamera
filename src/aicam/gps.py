@@ -13,7 +13,7 @@ class GPS:
             raise ConnectionError(f"Couldn't open serial port {port}")
         self.gps_is_ready = False
         logger.info(f"Successfuly loaded GPS on serial port {port}")
-
+    @staticmethod
     def check_if_gps_ready(self,timeout:int):
         start_time = time()
         # Read NMEA strings until we get valid lat/longs or timeout
@@ -30,7 +30,7 @@ class GPS:
         logger.debug("GPS not ready")
         return False
 
-
+    @staticmethod
     def read_until_gps(self,timeout:int):
         start_time = time()
         while time() < start_time+timeout:
