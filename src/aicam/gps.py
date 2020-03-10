@@ -2,6 +2,7 @@
 from serial import Serial
 from time import sleep, time
 from pynmea2 import parse, GGA
+from pynmea2.nmea import ChecksumError, ParseError
 from logging import getLogger
 logger = getLogger(__name__)
 
@@ -9,44 +10,51 @@ class GPS:
     def __init__(self,port,baudrate):
         self.serial = Serial(port=port,baudrate=baudrate)
         sleep(1)
-        if not self.serial.is_open():
+        if not self.serial.is_open:
             raise ConnectionError(f"Couldn't open serial port {port}")
         self.gps_is_ready = False
         logger.info(f"Successfuly loaded GPS on serial port {port}")
-    @staticmethod
+
     def check_if_gps_ready(self,timeout:int):
         start_time = time()
         # Read NMEA strings until we get valid lat/longs or timeout
         while time() < start_time+timeout:
             message = self.serial.readline()
-            message = parse(message)
-            # We'll start getting valid lat/longs when gps quality > 0
-            # https://www.gpsinformation.org/dale/nmea.htm#GGA
-            if message.sentence_type is "GGA":
-                if int(message.gps_qual) > 0:
-                    logger.info("GPS is ready")
-                    self.gps_is_ready = True
-                    return True
+            msg = self.process_line(message)
+            if msg is not None:
+                self.gps_is_ready = True
+                return True
         logger.debug("GPS not ready")
+        self.gps_is_ready = False
         return False
 
-    @staticmethod
-    def read_until_gps(self,timeout:int):
+
+    def read_until_gps(self,timeout:int=10):
         start_time = time()
         while time() < start_time+timeout:
             message = self.serial.readline()
-            logger.debug(message)
-            message = parse(message)
-            if message.sentence_type is "GGA":
-                if int(message.gps_qual) > 0:
-                    lat,lon = self.extract_latlong_gps(message)
-                    if lat is not None and lon is not None:
-                        return lat,lon
-                else:
-                    logger.info("GPS was ready, now isn't.")
-                    self.gps_is_ready = False
+            msg = self.process_line(message)
+            if msg is not None:
+                lat,lon = msg.latitude, msg.longitude
+                self.gps_is_ready = True
+                return lat,lon
+            else:
+                logger.info("GPS was ready, now isn't.")
+                self.gps_is_ready = False
 
-    def extract_latlong_gps(self,message:GGA):
-        if message.is_valid():
-            if message.gps_qual > 0:
-                return message.latitude,message.longitude
+    @staticmethod
+    def process_line(message):
+        message = message.decode('utf-8')
+        logger.debug(message)
+        try:
+            message = parse(message)
+        except ChecksumError:
+            logger.debug(f"Checksum error for {message}")
+            return None
+        except ParseError:
+            logger.debug(f"Parse error for message {message}")
+            return None
+        if message.sentence_type == "GGA":
+            if message.is_valid:
+                if int(message.gps_qual) > 0:
+                    return message

@@ -26,3 +26,7 @@ export NO_QNNPACK=1
 ```zsh
  --device /dev/vchiq
 ```
+
+sudo apt-get install libopenjp2-7
+sudo apt install libtiff5
+
