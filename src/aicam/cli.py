@@ -4,7 +4,6 @@ from src.aicam.gps import GPS
 from src.aicam.camera import Camera
 from attentive import quitevent
 from logging import getLogger
-from time import sleep
 from requests_toolbelt import sessions
 import torch
 from torch.autograd import Variable
@@ -24,15 +23,22 @@ def image_generator(camera:Camera,gps:GPS,model_path:str,sleep_time=5):
     while not quitevent.is_set():
         if not gps.gps_is_ready:
             logger.info(f"GPS not ready waiting {sleep_time}")
-            sleep(sleep_time)
+            gps.read_until_gps(10)
         else:
             image, tensor = camera.capture_still()
-            lat,lon = gps.read_until_gps()
-            t2 = tensor.unsqueeze(0)
-            t2_var = Variable(t2,requires_grad=False)
-            prediction  = model(tensor)
-            # Todo: Figure out
-            yield NotImplementedError()
+
+            t2_var = Variable(tensor,requires_grad=False).float()
+            lat, lon = gps.read_until_gps()
+            prediction  = model(t2_var)
+            data = prediction.data[0]
+            output = dict(
+                lat=lat,
+                lon=lon,
+                image=image,
+                is_good=float(data[0]),
+                is_bad=float(data[1])
+            )
+            yield output
 
 class ConfigObject:
     def __init__(self):
