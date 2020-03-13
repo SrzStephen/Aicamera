@@ -2,10 +2,10 @@ from picamera import PiCamera
 import numpy as np
 from time import sleep
 from logging import getLogger
-from io import BytesIO
 from PIL import Image
 import torch
-
+from io import BytesIO
+import base64
 logger = getLogger(__name__)
 
 
@@ -34,3 +34,10 @@ class Camera(PiCamera):
         image_array = np.expand_dims(image_array, axis=0)
         image_tensor = torch.from_numpy(image_array)
         return image, image_tensor
+
+def image_to_base64(image):
+    byte_io = BytesIO()
+    byte_io.seek(0)
+    image.save(byte_io, 'jpeg')
+    image_str = base64.b64encode(byte_io.getvalue())
+    return image_str

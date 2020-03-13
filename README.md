@@ -34,20 +34,23 @@
 Usage: aicamera [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  --camera_number INTEGER  Raspberry Pi camera number according to https://pic
-                           amera.readthedocs.io/en/release-1.13/api_camera.htm
-                           l#picamera, Default: 0
-  --camera_invert BOOLEAN  Vertical invert camera, Default: False
-  --baud_rate INTEGER      Baud rate on GPS, Default: 9600
-  --serial_port TEXT       Serial port for GPS, Default: /dev/ttyUSB0
-  --model_path TEXT        Pytorch Model Location, Default:
-                           /home/pi/secondstep.model
-  --help                   Show this message and exit.
+  --camera_number INTEGER    Raspberry Pi camera number according to https://p
+                             icamera.readthedocs.io/en/release-1.13/api_camera
+                             .html#picamera, Default: 0
+  --camera_invert BOOLEAN    Vertical invert camera, Default: False
+  --baud_rate INTEGER        Baud rate on GPS, Default: 9600
+  --serial_port TEXT         Serial port for GPS, Default: /dev/ttyUSB0
+  --model_path TEXT          Pytorch Model Location, Default:
+                             /home/pi/secondstep.model
+  --device_name TEXT         Device Name, Default: devpi
+  --min_predict_score FLOAT  AWS Access Key, Default: 0.5
+  --help                     Show this message and exit.
 
 Commands:
-  stdout
   to_file
   to_http
+  to_sqs
+  to_stdout
 
 Process finished with exit code 0
 
