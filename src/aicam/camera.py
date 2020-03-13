@@ -27,11 +27,10 @@ class Camera(PiCamera):
         # Image for looking at, image_tensor for showing.
         thumb_size = 512, 512
         image.thumbnail(thumb_size, Image.ANTIALIAS)
-        image.save("foo.jpg")
         image_array = np.array(image)
         # swap axis from l w c to c l w
         image_array = np.transpose(image_array, (2, 0, 1))
         # Image tensor is expected as batch size c l w
-        image_array= np.expand_dims(image_array,axis=0)
+        image_array = np.expand_dims(image_array, axis=0)
         image_tensor = torch.from_numpy(image_array)
         return image, image_tensor

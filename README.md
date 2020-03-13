@@ -39,13 +39,18 @@ Options:
                            l#picamera, Default: 0
   --camera_invert BOOLEAN  Vertical invert camera, Default: False
   --baud_rate INTEGER      Baud rate on GPS, Default: 9600
-  --serial_port TEXT       Serial port for GPS, Default: /dev/ttyAMA0
-  --model_path TEXT        Pytorch Model Location, Default: /opt/model
+  --serial_port TEXT       Serial port for GPS, Default: /dev/ttyUSB0
+  --model_path TEXT        Pytorch Model Location, Default:
+                           /home/pi/secondstep.model
   --help                   Show this message and exit.
 
 Commands:
+  stdout
   to_file
   to_http
+
+Process finished with exit code 0
+
 ```
 
 ## to_file
@@ -64,7 +69,7 @@ Options:
   --base_url TEXT  Base URL to send HTTP post to, Default: 127.0.0.1
   --help           Show this message and exit.
 ```
-
+## to_stdout
 
 ## Setup
 ### Scripted
