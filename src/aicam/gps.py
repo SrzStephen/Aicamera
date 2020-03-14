@@ -38,7 +38,7 @@ class GPS:
                 lat, lon = msg.latitude, msg.longitude
                 self.gps_is_ready = True
                 return lat, lon
-                self.gps_is_ready = False
+            self.gps_is_ready = False
 
     @staticmethod
     def process_line(message):

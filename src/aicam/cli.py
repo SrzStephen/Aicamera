@@ -16,11 +16,11 @@ import logging
 import csv
 import boto3
 from time import time, sleep
+from json import dumps
 
 logger = getLogger(__name__)
 
 
-# TODO only yield if predicted bad is above a certain value.
 def image_generator(camera: Camera, gps: GPS, model_path: str, device_name: str, min_predict_score: float,
                     sleep_time=5):
     if not Path(model_path).exists():
@@ -33,8 +33,12 @@ def image_generator(camera: Camera, gps: GPS, model_path: str, device_name: str,
             logger.info(f"GPS not ready waiting {sleep_time}")
             gps.read_until_gps(10)
         else:
+            try:
+                lat, lon = gps.read_until_gps()
+            except TypeError:
+                # will return none if we couldn't get a GPS reading in _timeout_ time.
+                continue
             image, tensor = camera.capture_still()
-            lat, lon = gps.read_until_gps()
             t2_var = Variable(tensor, requires_grad=False).float()
             prediction = model(t2_var)
             data = prediction.data[0]
@@ -74,33 +78,37 @@ def cli(config, camera_number, camera_invert, baud_rate, serial_port, model_path
     config.GPS = GPS(port=serial_port, baudrate=baud_rate)
     config.GPS.read_until_gps(timeout=100)
     config.model_path = model_path
-    config.generator = image_generator(config.camera, config.GPS,
-                                       config.model_path, config.device_name, min_predict_score)
     config.device_name = device_name
     config.min_predict_score = min_predict_score
+    config.generator = image_generator(config.camera, config.GPS,
+                                       config.model_path, config.device_name, min_predict_score)
 
 
 @cli.command("to_file")
 @click.option("--file_path", default="/tmp/data", help="Directory to save predictions to", type=str)
 @config_class
 def to_file(config, file_path):
+    count = 0
     with Path(file_path) as path:
         if not path.exists():
-            path.mkdir(file_path)
+            Path(file_path).mkdir()
         if not path.is_dir():
             raise OSError(f"Path {file_path} is actually a file")
-        count = 0
+
     for item in config.generator:
-        path.mkdir(count)
-        item['image'].save(Path(f"{file_path}/{count}/image.jpg", 'jpeg').absolute())
-        with open(Path(f"{file_path}/{count}/data.csv").absolute(), 'w') as fp:
-            writer = csv.writer(fp)
-            writer.writerow(["latitude", "longitude", "bad_estimate", "good_estimate"])
-            item['image'].pop()
-            w = csv.DictWriter(fp, item.keys())
-            w.writeheader()
-            w.writerow(item)
-            logger.info(item)
+        count = count+1
+        sub_path = Path(f"{file_path}/{count}")
+        if not sub_path.exists():
+            Path(f"{file_path}/{count}").mkdir()
+            item['image'].save(Path(f"{file_path}/{count}/image.jpeg"), 'jpeg')
+            with open(Path(f"{file_path}/{count}/data.csv").absolute(), 'w') as fp:
+                writer = csv.writer(fp)
+                writer.writerow(["latitude", "longitude", "bad_estimate", "good_estimate"])
+                item.pop('image')
+                w = csv.DictWriter(fp, item.keys())
+                w.writeheader()
+                w.writerow(item)
+                logger.info(item)
 
 
 @cli.command("to_http")
@@ -151,22 +159,27 @@ def to_sqls(config, access_key, secret_key, queue):
                          "set environment variable SQS_QUEUE")
 
     session = boto3.Session(aws_access_key_id=access_key,
-                            aws_secret_access_key=secret_key)
-    sqs = session.resource('sqs')
-    try:
-        queue = sqs.get_queue_by_name(QueueName=queue)
-    except Exception as e:
-        logger.debug(f"SQS failed to get queue. Got {e}")
-        raise ValueError(f"SQS queue {queue} not found or you don't have access to it!")
-
+                            aws_secret_access_key=secret_key, region_name='us-east-1')
+    sqs = session.resource(service_name='sqs').Queue(url=queue)
     for item in config.generator:
         # convert image to base64 to send
         item['image'] = image_to_base64(item['image'])
-        header = dict(sent_from=gethostname(), uptime=time() - start, device_name=config.device_name)
-        resp = queue.send_message(MessageAttributes=header, MessageBody=item)
+        header = generate_sqs_header(hostname=gethostname(), uptime=time() - start, device_name=config.device_name)
+        resp = sqs.send_message(MessageAttributes=header, MessageBody=dumps(item))
         logger.debug(f"Sent message {item}, got response {resp}")
+        sleep(120)
+
+
+def generate_sqs_header(hostname: str, uptime: float, device_name: str):
+    def fields(Datatype, Value):
+        return dict(DataType=Datatype, StringValue=str(Value))
+
+    return dict(sent_from=fields("String", hostname),
+                uptime=fields("Number", uptime),
+                device_name=fields("String", device_name)
+                )
 
 
 if __name__ == "__main__":
-    basicConfig(level=logging.INFO)
+    basicConfig(level=logging.DEBUG)
     cli()

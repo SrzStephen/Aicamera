@@ -6,7 +6,9 @@ from PIL import Image
 import torch
 from io import BytesIO
 import base64
+
 logger = getLogger(__name__)
+from copy import deepcopy
 
 
 class Camera(PiCamera):
@@ -21,9 +23,10 @@ class Camera(PiCamera):
         sleep(2)
 
     def capture_still(self):
-        self.capture(self.stream, format='jpeg')
         self.stream.seek(0)
+        self.capture(self.stream, format='jpeg')
         image = Image.open(self.stream)
+        fullsize_image = deepcopy(image)
         # Image for looking at, image_tensor for showing.
         thumb_size = 512, 512
         image.thumbnail(thumb_size, Image.ANTIALIAS)
@@ -33,11 +36,12 @@ class Camera(PiCamera):
         # Image tensor is expected as batch size c l w
         image_array = np.expand_dims(image_array, axis=0)
         image_tensor = torch.from_numpy(image_array)
-        return image, image_tensor
+        return fullsize_image, image_tensor
+
 
 def image_to_base64(image):
     byte_io = BytesIO()
     byte_io.seek(0)
     image.save(byte_io, 'jpeg')
-    image_str = base64.b64encode(byte_io.getvalue())
+    image_str = base64.b64encode(byte_io.getvalue()).decode('utf-8')
     return image_str
