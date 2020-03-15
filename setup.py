@@ -16,6 +16,7 @@ setup(
                  "Intended Audience :: Developers",
                  "Topic :: Software Development :: Machine Learning",
                  "Programming Language :: Python :: 3.7"],
+    package_dir={'': 'src'},
     packages=find_packages(where='src'),
     python_requires=">=3.5",
     platforms="Raspbian",

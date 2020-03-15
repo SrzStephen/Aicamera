@@ -34,10 +34,14 @@ class GPS:
         while time() < start_time + timeout:
             message = self.serial.readline()
             msg = self.process_line(message)
-            if msg is not None:
-                lat, lon = msg.latitude, msg.longitude
-                self.gps_is_ready = True
-                return lat, lon
+            try:
+                if msg is not None:
+                    lat, lon = msg.latitude, msg.longitude
+                    self.gps_is_ready = True
+                    return lat, lon
+            except (AttributeError,KeyError):
+                logger.warning("Couldn't get lat or lon from message. Quality was >0 and message was valid")
+                pass
             self.gps_is_ready = False
 
     @staticmethod

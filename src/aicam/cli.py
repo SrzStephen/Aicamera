@@ -1,8 +1,8 @@
 import click
-from src.aicam.settings import CAMERA_NUMBER, INVERT_CAMERA, GPS_BAUD_RATE, GPS_SERIAL_PORT, MODEL_PATH, BASE_URL
-from src.aicam.settings import ACCESS_KEY, SECRET_KEY, SQS_QUEUE, DEVICE_NAME, MIN_PREDICT_SCORE, gethostname
-from src.aicam.gps import GPS
-from src.aicam.camera import Camera, image_to_base64
+from aicam.settings import CAMERA_NUMBER, INVERT_CAMERA, GPS_BAUD_RATE, GPS_SERIAL_PORT, MODEL_PATH, BASE_URL
+from aicam.settings import ACCESS_KEY, SECRET_KEY, SQS_QUEUE, DEVICE_NAME, MIN_PREDICT_SCORE, gethostname
+from aicam.gps import GPS
+from aicam.camera import Camera, image_to_base64
 from attentive import quitevent
 from logging import getLogger
 from requests_toolbelt import sessions
@@ -17,8 +17,10 @@ import csv
 import boto3
 from time import time, sleep
 from json import dumps
-
+import pytz
+from datetime import datetime
 logger = getLogger(__name__)
+
 
 
 def image_generator(camera: Camera, gps: GPS, model_path: str, device_name: str, min_predict_score: float,
@@ -31,10 +33,10 @@ def image_generator(camera: Camera, gps: GPS, model_path: str, device_name: str,
     while not quitevent.is_set():
         if not gps.gps_is_ready:
             logger.info(f"GPS not ready waiting {sleep_time}")
-            gps.read_until_gps(10)
+            gps.read_until_gps(300)
         else:
             try:
-                lat, lon = gps.read_until_gps()
+                lat, lon = gps.read_until_gps(300)
             except TypeError:
                 # will return none if we couldn't get a GPS reading in _timeout_ time.
                 continue
@@ -129,8 +131,10 @@ def to_http(config, base_url):
     while not quitevent.is_set():
         for item in config.generator:
             item['image'] = image_to_base64(item['image'])
-            header = dict(sent_from=gethostname(), uptime=time() - start, device_name=config.device_name)
-            http.post(f"{base_url}/data", data=item, headers=header)
+            header = dict(sent_from=gethostname(), uptime=str(time() - start), device_name=str(config.device_name))
+            data = dict(device_name=item['device_name'],timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
+                        confidence=item['is_bad'],coordinates=[item['lat'],item['lon']],photo_data=item['image'])
+            http.post(f"{base_url}/dev/upload", data=dumps(data),headers=header)
 
 
 @cli.command("to_stdout")
