@@ -1,6 +1,6 @@
 from serial import Serial
 from time import sleep, time
-from pynmea2 import parse, GGA
+from pynmea2 import parse
 from pynmea2.nmea import ChecksumError, ParseError
 from logging import getLogger
 

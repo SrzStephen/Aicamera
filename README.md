@@ -1,6 +1,5 @@
 # About
-
-![Raspberry Pi Pipleine](docs/PiPipeline.png)
+Python package to do on device inference. This is made as part of the Devpost/Facebook hackathon found [here](https://fbai1.devpost.com/). You will find full instructions there.
 
 ## Environment Variables
 ```zsh
@@ -25,9 +24,6 @@
 # Pytorch Model Location
 # MODEL_PATH=/opt/model
 ```
-
-
-![AWS Pipeline](docs/AWSFlow.png)
 
 # Usage
 ```zsh
@@ -73,38 +69,21 @@ Options:
   --help           Show this message and exit.
 ```
 ## to_stdout
+```
+Usage: aicamera to_stdout [OPTIONS]
 
+Options:
+  --help           Show this message and exit.
+```
+## to_sqs
+```
+Usage: aicamera to_http [OPTIONS]
+
+Options:
+  --queue TEXT  SQS queue name, Default: False
+  --access_key TEXT  AWS Access Key, Default: False
+  --secret_key TEXT  AWS Secret Key, Default: False
+  --help           Show this message and exit.
+```
 ## Setup
-### Scripted
-Required commands are found in ```foo.bar``` of this repo which can be run with 
-```bash
-chmod u+x foo.bar
-./foo.bar
-```
-### Manual
-
-Enable Camera with 
-```
-sudo raspi-config nonint do_camera 1
-```
-install picamera 
-```
-sudo apt-get install python-picamera python3-picamera
-```
-Add required users to the dialout role to access UART
-```zsh
-usermod -a -G dialout pi
-usermod -a -G dialout ggc_user
-```
-Enable UART
-```echo 'enable_uart=1' >>/boot/config.txt```
-reboot
-```bash
-sudo reboot
-```
-
-
-run docker container
-```zsh
-docker run --privileged -v /dev/ttyS5 -v /dev/
-```
+Please see ```devpost.md for setup instructions```

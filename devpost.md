@@ -187,7 +187,7 @@ sudo -E USE_MKLDNN=0 USE_QNNPACK=0 USE_NNPACK=0 USE_DISTRIBUTED=0 BUILD_TEST=0 p
 ```
 sudo apt update
 sudo apt upgrade -y
-sudo apt-get install python-picamera python3-picamera -y
+sudo apt-get install python-picamera python3-picamera libopenjp2-7 libtiff5 -y
 sudo apt install libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools -y
 git clone https://github.com/SrzStephen/Aicamera.git
 cd Aicamera
