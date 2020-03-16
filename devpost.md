@@ -1,22 +1,31 @@
 # Pothole AI
 ![logo](docs/logo.png)
 
-Pothole AI was designed after looking at a dashcam and asking "what if we took the video it recorded and did some edge
- analytics to figure out if the road needs to be resurfaced".
+Pothole AI was designed after looking at a dashcam and asking "What if we used Edge Analytics on a dashcam to map out
+ where potholes were, so that local governments and communities knew where to focus their efforts?".
 
-It consists of two parts: The Raspberry Pi based Camera using a Pytorch model to do edge inference of road quality 
-and a website to aggregate readings and provide a full view of road conditions. The idea behind this is for members of 
-the community to automatically be recording road conditions and uploading them to a central site so that local government
- can use the geographic density and confidence of the data to pinpoint where they should be spending the effort to fix.
+It consists of two parts: 
+
+* The Raspberry Pi based Camera using a Pytorch model to do edge inference of road quality 
+* A website to aggregate readings and provide a full view of road conditions. 
+
+The idea behind these two components is to allow members of the community to automatically record and upload road 
+conditions, using edge inference to reduce the data sent across the network. This data could then be displayed on a
+website to give communities and local governments a geographic density of potholes to give them a better idea of
+where to spend their efforts, or to find and fix potholes that haven't been reported (because lets face it, who's actually
+reported a pothole to your local council?).
 
 ![images of potholes](docs/exampleimage.png)
- 
- 
-We believe that a solution like this is required because cases of 
-[a village throwing a birthday party for a pothole](https://metro.co.uk/2018/03/26/village-hold-first-birthday-party-for-pothole-outside-their-home-7417952/)
-or a man filling in potholes while holding a sign saying ["I filled the potholes, pay me instead of your taxes"](https://www.cbc.ca/news/canada/nova-scotia/stellarton-man-given-cash-coffee-cannabis-filling-potholes-1.5072477) indicates that there is probably some room for improvement in the current situation.
 
-On the more serious side, there are serious consequences of potholes including 
+We believe that this solution is nessessary because a quick google of pothole leads you to:
+* Many questions on whether cities can be sued for damage to cars due to potholes
+* News articles about [a village throwing a birthday party for a pothole]((https://metro.co.uk/2018/03/26/village-hold-first-birthday-party-for-pothole-outside-their-home-7417952/))
+* News articles about a man who [despite warnings from the police is committed to filling in potholes himself](https://www.saltwire.com/news/despite-warning-from-police-stellarton-man-remains-committed-to-filling-in-potholes-off-exit-23-294924)
+* News articles about a man [celebrating the third birthday of a pothole](https://news.yahoo.com/missouri-man-celebrates-3rd-birthday-185948993.html)
+
+These articles are not an indication of a system that is working well.
+
+Some of the more serious concequences of potholes include:
 * Annual average cost to vehicles of $377 due to rough pavement
 * Of approximately 33,000 traffic fatalities each year, one-third involve poor road conditions.
 
@@ -24,45 +33,48 @@ On the more serious side, there are serious consequences of potholes including
 
 ## Hardware
 ![](docs/Hardware.png)
-[Raspberry Pi 4B](https://core-electronics.com.au/raspberry-pi-4-model-b-2gb.html)
-[Ublox Neo M8 GPS](https://www.aliexpress.com/item/32325420719.html?spm=a2g0o.productlist.0.0.34ef5707Xfqbmh)
-[Pi Camera](https://www.aliexpress.com/item/32846859601.html?spm=a2g0o.productlist.0.0.307623feOckDyl)
-[Optional: 3A Power Bank](https://www.amazon.com/gp/product/B07H6LB4J4/ref=as_li_ss_tl?ie=UTF8)
-[Optional: USB to FTDI converter](https://www.aliexpress.com/item/32826575637.html?spm=a2g0o.productlist.0.0.cfc529b09MN7sa)
-[Optional: Raspberry Pi Heatsink](https://www.aliexpress.com/item/4000348002518.html?spm=a2g0o.productlist.0.0.51b05477h9g8bc)
+* [Raspberry Pi 4B](https://core-electronics.com.au/raspberry-pi-4-model-b-2gb.html)
+* [Ublox Neo M8 GPS](https://www.aliexpress.com/item/32325420719.html?spm=a2g0o.productlist.0.0.34ef5707Xfqbmh)
+* [Pi Camera](https://www.aliexpress.com/item/32846859601.html?spm=a2g0o.productlist.0.0.307623feOckDyl)
+* [Optional: 3A Power Bank](https://www.amazon.com/gp/product/B07H6LB4J4/ref=as_li_ss_tl?ie=UTF8)
+* [Optional: USB to FTDI converter](https://www.aliexpress.com/item/32826575637.html?spm=a2g0o.productlist.0.0.cfc529b09MN7sa)
+* [Optional: Raspberry Pi Heatsink](https://www.aliexpress.com/item/4000348002518.html?spm=a2g0o.productlist.0.0.51b05477h9g8bc)
 
-To build this system we used a Raspberry Pi 4B with a PiCam v2 and a Neo M8 GPS. The raspberry pi was responsible for
-getting the current GPS position, taking a picture, running the pytorch model to get a bad road/good road score and
-send this information to an AWS Lambda function which would then store the score, latitude, longitude, device name
- and image into a database.
+To build this system we used a Raspberry Pi 4B with a PiCam v2 and a Neo M8 GPS. The Raspberry Pi was responsible for
+getting the current GPS position, taking a picture, running the Pytorch model to get a confidence score of the road being bad.
+
+
+This information was then sent to an AWS Lambda endpoint which in turn, stores the latitude, longitude, device name and image into a database.
+
 
 We would not recommend replacing the Pi Camera with a generic USB camera as the way we have written our code assumes a Pi Camera and results will be uncertain with a USB Camera.
 
-You can substitute the Ublox Neo M8 GPS with a lot of different other models, so long as they support sending NMEA strings over UART and are powered by 3.3v-5v. 
-We ended up passing ours through a FTDI -> USB header so we didn't need to worry about mucking around with the Raspberry Pis GPIO pins.
- 
- 
 
+You can substitute the Ublox Neo M8 GPS with a lot of different other models, so long as they support sending NMEA strings over UART and are powered by 3.3v-5v. 
+We ended up passing ours through a FTDI -> USB header so we didn't need to worry about the setting up the Raspberry Pis GPIO pins.
+ 
+ 
 After observing our system we would make three recommendations:
 1. We would highly suggest putting a heatsink on the raspberry pi as it gets hot when doing inference like this.
 2. We would suggest putting the camera slightly elevated on your cars dashboard. You may notice a ducted taped box that ours was sitting on.
 We ended up discarding a lot of our initial readings because too much of the field of view was blocked by the windscreen wipers.
 ![Pi on box](docs/FinalCamera.png)
+ __Note for those who are concerned: Australian steering wheels are on the right side of the car, not the left.__
+
 3. Use a USB powerbank instead of a USB slot powered by your car.The Raspberry Pi is very particular about current/voltage.
-
-
 
 ## Software
 
 ### Deep learning
-Deep learning can be very intimidating at first, and taking inspiration from [Fast.ai](https://www.fast.ai/) we wanted to show how easy it is to get something that works.
+Deep learning can be very intimidating at first, and taking inspiration from [Fast.ai](https://www.fast.ai/) we wanted
+ to show how easy it is to get something that works.
 
-See notebook [] for a full end to end downloading and training example that will output a model.
+See notebook for a full end to end downloading and training example that will output a model.
 
-We took the dataset curated by the amazing [M.J Booysen](https://www.researchgate.net/profile/Mj_thinus_Booysen) [1] [2].
-Which is an annotated dataset of labeled images of roads with an without potholes. 
-While this dataset initially is meant to be used for localisation (finding potholes in images), we chose to use it as 
-a classification dataset (potholes or no potholes).
+We took the dataset curated by the amazing [M.J Booysen](https://www.researchgate.net/profile/Mj_thinus_Booysen)
+which is an annotated dataset of labeled images of roads with an without potholes. 
+While this dataset initially is meant to be used for localisation (locating potholes in images), we chose to use it as 
+a classification dataset (image contains potholes or no potholes), [similar to Jian Yangs famous App](https://www.youtube.com/watch?v=pqTntG1RXSY).
 
 We used the Pytorch hosted MobileNet V2 network, which is pretrained on Imagenet. 
 This is a convolutional neural network which is small enough to be used in embedded applications.
