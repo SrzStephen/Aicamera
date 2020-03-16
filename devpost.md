@@ -8,12 +8,15 @@ It consists of two parts: The Raspberry Pi based Camera using a Pytorch model to
 and a website to aggregate readings and provide a full view of road conditions. The idea behind this is for members of 
 the community to automatically be recording road conditions and uploading them to a central site so that local government
  can use the geographic density and confidence of the data to pinpoint where they should be spending the effort to fix.
+
+![images of potholes](docs/exampleimage.png)
+ 
  
 We believe that a solution like this is required because cases of 
 [a village throwing a birthday party for a pothole](https://metro.co.uk/2018/03/26/village-hold-first-birthday-party-for-pothole-outside-their-home-7417952/)
 or a man filling in potholes while holding a sign saying ["I filled the potholes, pay me instead of your taxes"](https://www.cbc.ca/news/canada/nova-scotia/stellarton-man-given-cash-coffee-cannabis-filling-potholes-1.5072477) indicates that there is probably some room for improvement in the current situation.
 
-On the more serious side, there are serious concequences of potholes including 
+On the more serious side, there are serious consequences of potholes including 
 * Annual average cost to vehicles of $377 due to rough pavement
 * Of approximately 33,000 traffic fatalities each year, one-third involve poor road conditions.
 
@@ -99,7 +102,7 @@ Options:
   --baud_rate INTEGER        Baud rate on GPS, Default: 9600
   --serial_port TEXT         Serial port for GPS, Default: /dev/ttyUSB0
   --model_path TEXT          Pytorch Model Location, Default:
-                             /home/pi/pytorch.model
+                             /home/pi/aicamera/models/thirdstep.model
   --device_name TEXT         Device Name, Default: devpi
   --min_predict_score FLOAT  Minimum prediction score to send, Default: 0.5
   --help                     Show this message and exit.
@@ -142,19 +145,63 @@ Most of these CLI options are also exposed as environment variables.
 ### Website
 
 ### Pi
+Run these commands on a raspberry pi with an internet connection. 
+
+If you're running this on a corporate proxy you may need to modify you http_proxy, https_proxy environment settings on the Raspberry Pi.
+
+### Enable Pi Camera
+Configure the camera with ```raspi-config```
+
+Give your pi user permission to access serial devices.
+```zsh
+usermod -a -G dialout pi
+```
+
 #### Install Pytorch
 ```
-sudo apt install libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools
 git clone --recursive https://github.com/pytorch/pytorch
+cd pytorch
 git submodule update --remote third_party/protobuf
 sudo -E USE_MKLDNN=0 USE_QNNPACK=0 USE_NNPACK=0 USE_DISTRIBUTED=0 BUILD_TEST=0 python3 setup.py install
 ```
-### Install Torchvision
+### Install TorchVision
+```
+git clone --recursive https://github.com/pytorch/vision.git
+cd vision
+sudo -E USE_MKLDNN=0 USE_QNNPACK=0 USE_NNPACK=0 USE_DISTRIBUTED=0 BUILD_TEST=0 python3 setup.py install
+```
 
+### Install CameraAi
+```
+sudo apt update
+sudo apt upgrade -y
+sudo apt-get install python-picamera python3-picamera -y
+sudo apt install libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools -y
+git clone https://github.com/SrzStephen/Aicamera.git
+cd Aicamera
+pip3 install -r requirements.txt
+pip3 install .
+```
+You should then be able to type ```cameraai``` and see the help page come up.
 
-### Model Prediction
+You can use the ```cameraai.service``` file in the unit file directory to auto start the cameraai program on boot, do to this:
+```zsh
+cp unit/cameraai.service /etc/systemd/system/cameraai.service
+sudo systemctl enable cameraai
+sudo systemctl start camereaai
+```
+You will probably want to modify the ```ExecStart``` command to what you want and point the ```--model_path``` parameter to the model you wish to use. 
 
+Available in this repo are ```firststep.model``` ```secondstep.model``` ```thirdstep.model``` which represent each of the training sages. By default you will use ```thirdstep.model```.
 
+### Model Notebook
+While the pretrained models are available in the ```models``` directory, you can train it yourself.
+
+The full code required to train the model is available in the ```training``` folder.
+
+We would suggest training this on a computer with a decent GPU as it is time intensive otherwise. The notebook should work on your system without modification. If it doesn't then please reach out to us with a link to what was giving you an error.
+
+To use a different model on the raspberry pi, copy it to your Pi and refer to it by the ```--model_path``` option.
 
 ## Challenges we ran into
 
@@ -184,5 +231,6 @@ Thanks to M.J Booysen for his data on pot holes.
 [1] S. Nienaber, M.J. Booysen, R.S. Kroon, “Detecting potholes using simple image processing techniques and real-world footage”, SATC, July 2015, Pretoria, South Africa.
 [2] S. Nienaber, R.S. Kroon, M.J. Booysen , “A Comparison of Low-Cost Monocular Vision Techniques for Pothole Distance Estimation”, IEEE CIVTS, December 2015, Cape Town, South Africa.
 
-Thanks to  [Minki-Kim95](https://github.com/pytorch/pytorch/issues/26455.) for their answers on Github for how to compile pytorch from source on a Raspberry Pi
+Thanks to [Minki-Kim95](https://github.com/pytorch/pytorch/issues/26455.) for their answers on Github for how to compile Pytorch from source on a Raspberry Pi
 
+Thanks to [ptrblck](https://discuss.pytorch.org/u/ptrblck/summary) for all the questions he has answered on the Pytorch forums. When we were looking at forum posts for things we didn't know he was the one who answered a lot of questions.
